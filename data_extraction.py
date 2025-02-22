@@ -13,34 +13,33 @@ def get_authors(id_num):
     names = result.split('\n')
     
     for name in names:
-        name_building = ""
+        name = name.strip()
+        if not name:
+            continue 
+        if not name.startswith("<name") or not name.endswith("</name>"):
+            # bad formated XML
+            continue
+        name = re.sub(r' xmlns="[^"]+"', '', name)
         root = ET.fromstring(name)
+        if not list(root) and root.text:
+            name_building = " ".join(root.itertext()).strip()
+        else:
+            name_building = " ".join(root.itertext()).strip()
+            tags = ['given-names', 'surname']
+            for tag in tags:
+                elem = root.find(tag)
+                if elem is not None and elem.text:
+                    content = elem.text.strip()
+                    if content:
+                        context_ungrouped['label'].append(tag)
+                        output = '[name] ' + content
+                        context_ungrouped['text'].append(output)
+                        name_building = name_building + content + " "
 
-        surname_elem = root.find('surname')
-        given_names_elem = root.find('given-names')
-
-        if given_names_elem is not None and given_names_elem.text:
-            given_names = given_names_elem.text.strip()
-            if given_names:
-                #ungrouped given_names context
-                context_ungrouped['label'].append('given-names')
-                output = '[name] ' + given_names
-                context_ungrouped['text'].append(output)
-                name_building = given_names + " "
-
-        if surname_elem is not None and surname_elem.text:
-            surname = surname_elem.text.strip()
-            if surname:
-                #ungrouped author context
-                context_ungrouped['label'].append('surname')
-                output = '[name] ' + surname
-                context_ungrouped['text'].append(output)
-                name_building = name_building + surname
-
-        if name != "":
-            # grouped author
-            grouped_output['label'].append('name')
-            grouped_output['text'].append(name_building)
+            if name_building:
+                # grouped author
+                grouped_output['label'].append('name')
+                grouped_output['text'].append(name_building)
 
     query.close()
     session.close()
@@ -210,8 +209,7 @@ def get_title(id_num):
 
 def create_file():
     counter = 0
-    # try:
-    with open('DocIds2.txt', 'r') as file:
+    with open('DocIDs.txt', 'r') as file:
         with open('incomplete_outputIds2.txt', 'a', encoding='utf-8') as ids:
             for line in file:
                 id = line.strip()
@@ -227,15 +225,15 @@ def create_file():
     grouped_output_df = pd.DataFrame(grouped_output)
     grouped_output_df.dropna()
     grouped_output_df.drop_duplicates()
-    grouped_output_df.to_csv('grouped2.csv', index=False, index_label=False)
+    grouped_output_df.to_csv('grouped1.csv', index=False, index_label=False)
     context_ungrouped_df = pd.DataFrame(context_ungrouped)
     context_ungrouped_df.dropna()
     context_ungrouped_df.drop_duplicates()
-    context_ungrouped_df.drop_duplicates().to_csv("ungrouped_with_metadata2.csv", index=False)
+    context_ungrouped_df.drop_duplicates().to_csv("ungrouped_with_metadata1.csv", index=False)
     print("done")
     file.close()
     
 grouped_output = {'label': [], 'text': []}
 context_ungrouped = {'label': [], 'text': []}
-database = "PMC002"
+database = "PMC001"
 create_file()
