@@ -209,31 +209,31 @@ def get_title(id_num):
 
 def create_file():
     counter = 0
-    with open('DocIDs.txt', 'r') as file:
+    with open('DocIds2.txt', 'r') as file:
         with open('incomplete_outputIds2.txt', 'a', encoding='utf-8') as ids:
             for line in file:
                 id = line.strip()
-                if id and counter < 50:
-                    print(f"Processing ID: {id}")
-                    get_authors(id) 
-                    get_affiliation(id)
-                    get_citation(id)
-                    get_title(id)
-                    ids.write(id + '\n')
-                    counter += 1
+                # if id and counter < 50:
+                print(f"Processing ID: {id}")
+                get_authors(id) 
+                get_affiliation(id)
+                get_citation(id)
+                get_title(id)
+                ids.write(id + '\n')
+                    # counter += 1
 
     grouped_output_df = pd.DataFrame(grouped_output)
     grouped_output_df.dropna()
     grouped_output_df.drop_duplicates()
-    grouped_output_df.to_csv('grouped1.csv', index=False, index_label=False)
+    grouped_output_df.to_csv('grouped2.csv', index=False, index_label=False)
     context_ungrouped_df = pd.DataFrame(context_ungrouped)
     context_ungrouped_df.dropna()
     context_ungrouped_df.drop_duplicates()
-    context_ungrouped_df.drop_duplicates().to_csv("ungrouped_with_metadata1.csv", index=False)
+    context_ungrouped_df.drop_duplicates().to_csv("ungrouped_with_metadata2.csv", index=False)
     print("done")
     file.close()
     
 grouped_output = {'label': [], 'text': []}
 context_ungrouped = {'label': [], 'text': []}
-database = "PMC001"
+database = "PMC002"
 create_file()
