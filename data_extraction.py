@@ -31,15 +31,15 @@ def get_authors(id_num):
                 if elem is not None and elem.text:
                     content = elem.text.strip()
                     if content:
-                        context_ungrouped['label'].append(tag)
+                        context_segment['label'].append(tag)
                         output = '[name] ' + content
-                        context_ungrouped['text'].append(output)
+                        context_segment['text'].append(output)
                         name_building = name_building + content + " "
 
             if name_building:
-                # grouped author
-                grouped_output['label'].append('name')
-                grouped_output['text'].append(name_building)
+                # paragraph author
+                paragraph_output['label'].append('name')
+                paragraph_output['text'].append(name_building)
 
     query.close()
     session.close()
@@ -51,22 +51,25 @@ def get_affiliation(id_num):
     query_string = f"for $doc in collection('{database}') where contains(document-uri($doc), '{id_num}') return $doc//aff"
     query = session.query(query_string)
     result = query.execute()
-
-    affs = result.split('\n')
     
-    for aff in affs:
-        aff = aff.strip()
+    affs = result.split('\n')
+    index = 0  
+
+    while index < len(affs):
+        aff = affs[index].strip()
+        index += 1  # Increment early to avoid infinite loops
+        
         if not aff:
             continue 
         if not aff.startswith("<aff") or not aff.endswith("</aff>"):
-            # bad formated XML
+            # Badly formatted XML
             continue
+        
         aff = re.sub(r' xmlns="[^"]+"', '', aff)
         root = ET.fromstring(aff)
-        if not list(root) and root.text:
-            aff_building = " ".join(root.itertext()).strip()
-        else:
-            aff_building = " ".join(root.itertext()).strip()
+        aff_building = " ".join(root.itertext()).strip()
+
+        if list(root):
             tags = ['label', 'addr-line', 'sup', 'institution', 'country', 'email']
             
             for tag in tags:
@@ -74,16 +77,12 @@ def get_affiliation(id_num):
                 if elem is not None and elem.text:
                     content = elem.text.strip()
                     if content:
-                        #Ungrouped label context
-                        context_ungrouped['label'].append(tag)
+                        context_segment['label'].append(tag)
                         output = '[aff] ' + content
-                        context_ungrouped['text'].append(output)
-                        aff_building = aff_building + content + " "
-            
-            if aff_building:
-                # grouped affiliation
-                grouped_output['label'].append('aff')
-                grouped_output['text'].append(aff_building)
+                        context_segment['text'].append(output)
+
+            paragraph_output['label'].append('aff')
+            paragraph_output['text'].append(aff_building)
 
     query.close()
     session.close()
@@ -138,27 +137,27 @@ def get_citation(id_num):
                         full_name = f"{given_names_text} {surname_text}".strip()
                         
                         if full_name:
-                            # make one ungrouped without the context and one with context (surname alone vs with persongroup label)
-                            context_ungrouped['label'].append('person-group[name[surname]]')
+                            # make one segment without the context and one with context (surname alone vs with persongroup label)
+                            context_segment['label'].append('person-group[name[surname]]')
                             output = "[element-citation]" + surname_text
-                            context_ungrouped['text'].append(output)
-                            context_ungrouped['label'].append('person-group[name[given-names]]')
+                            context_segment['text'].append(output)
+                            context_segment['label'].append('person-group[name[given-names]]')
                             output = "[element-citation]" + given_names_text
-                            context_ungrouped['text'].append(output)
+                            context_segment['text'].append(output)
                             temp += full_name
                             
             else:
                 elem = root.find(f".//{tag}")
                 if elem is not None:
                     value = elem.text.strip() if elem.text else ""
-                    context_ungrouped['label'].append(tag)
+                    context_segment['label'].append(tag)
                     output = '[element-citation] ' + value
-                    context_ungrouped['text'].append(output)
+                    context_segment['text'].append(output)
                     temp += value + ' '
 
         if temp:
-            grouped_output['label'].append('element-citation')
-            grouped_output['text'].append(temp)
+            paragraph_output['label'].append('element-citation')
+            paragraph_output['text'].append(temp)
         else:
             break
     query.close()
@@ -193,15 +192,15 @@ def get_title(id_num):
                 elem = root.find(tag)
                 content = elem.text.strip() if elem is not None and elem.text else ""
                 if content:
-                    context_ungrouped['label'].append(tag)
+                    context_segment['label'].append(tag)
                     output = '[title-group] ' + content
-                    context_ungrouped['text'].append(output)
+                    context_segment['text'].append(output)
                     title = title + output + " "
 
             if title:
-                # grouped title
-                grouped_output['label'].append('title-group')
-                grouped_output['text'].append(title)
+                # paragraph title
+                paragraph_output['label'].append('title-group')
+                paragraph_output['text'].append(title)
 
     query.close()
     session.close()
@@ -213,7 +212,7 @@ def create_file():
         with open('incomplete_outputIds2.txt', 'a', encoding='utf-8') as ids:
             for line in file:
                 id = line.strip()
-                # if id and counter < 50:
+                # if id and counter < 1:
                 print(f"Processing ID: {id}")
                 get_authors(id) 
                 get_affiliation(id)
@@ -222,18 +221,18 @@ def create_file():
                 ids.write(id + '\n')
                     # counter += 1
 
-    grouped_output_df = pd.DataFrame(grouped_output)
-    grouped_output_df.dropna()
-    grouped_output_df.drop_duplicates()
-    grouped_output_df.to_csv('grouped2.csv', index=False, index_label=False)
-    context_ungrouped_df = pd.DataFrame(context_ungrouped)
-    context_ungrouped_df.dropna()
-    context_ungrouped_df.drop_duplicates()
-    context_ungrouped_df.drop_duplicates().to_csv("ungrouped_with_metadata2.csv", index=False)
+    paragraph_output_df = pd.DataFrame(paragraph_output)
+    paragraph_output_df.dropna()
+    paragraph_output_df.drop_duplicates()
+    paragraph_output_df.to_csv('paragraphs.csv', index=False, index_label=False)
+    context_segment_df = pd.DataFrame(context_segment)
+    context_segment_df.dropna()
+    context_segment_df.drop_duplicates()
+    context_segment_df.drop_duplicates().to_csv("meta_segments.csv", index=False)
     print("done")
     file.close()
     
-grouped_output = {'label': [], 'text': []}
-context_ungrouped = {'label': [], 'text': []}
+paragraph_output = {'label': [], 'text': []}
+context_segment = {'label': [], 'text': []}
 database = "PMC002"
 create_file()

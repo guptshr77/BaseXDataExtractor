@@ -53,63 +53,23 @@ def get_rid_of_duplicates():
     pd.read_csv("combined_gd_cleaned.csv").drop_duplicates().to_csv("combined_gd.csv", index=False)
 
 
-# context_1 = csv_to_dict('context_ungrouped1.csv')
-# context_2 = csv_to_dict('context_ungrouped2.csv')
-# noncontext_1 = csv_to_dict('noncontext_ungrouped1.csv')
-# noncontext_2 = csv_to_dict('noncontext_ungrouped2.csv')
-# grouped_1 = csv_to_dict('groupted_data1.csv')
-# grouped_2 = csv_to_dict('groupted_data2.csv')
-# combined_context = combine_csvs(context_1, context_2, ['label', 'text'])
-# combined_noncontext = combine_csvs(noncontext_1, noncontext_2, ['label', 'text'])
-# combined_grouped = combine_csvs(grouped_1, grouped_2, ['label', 'text'])
+grouped1 = csv_to_dict('grouped1.csv')
+grouped2 = csv_to_dict('grouped2.csv')
+ungrouped1 = csv_to_dict('ungrouped_with_metadata1.csv')
+ungrouped2 = csv_to_dict('ungrouped_with_metadata2.csv')
+grouped = combine_csvs(grouped1, grouped2, ['label', 'text'])
+ungrouped = combine_csvs(ungrouped1, ungrouped2, ['label', 'text'])
 
-# print(len(combined_context['label']))
-# combined_context = pd.DataFrame(combined_context)
-# combined_context = combined_context.drop_duplicates()
-# combined_context.dropna()
+print(len(grouped['label']))
+grouped = pd.DataFrame(grouped)
+grouped = grouped.drop_duplicates()
+grouped.dropna()
 
-# print(len(combined_noncontext['label']))
-# combined_noncontext = pd.DataFrame(combined_noncontext)
-# combined_noncontext = combined_noncontext.drop_duplicates()
-# combined_noncontext.dropna()
+print(len(ungrouped['label']))
+ungrouped = pd.DataFrame(ungrouped)
+ungrouped = ungrouped.drop_duplicates()
+ungrouped.dropna()
 
-# print(len(combined_grouped['label']))
-# combined_grouped = pd.DataFrame(combined_grouped)
-# combined_grouped = combined_grouped.drop_duplicates()
-# combined_grouped.dropna()
 
-# combined_context.to_csv('combined_context.csv', index=False, index_label=False)
-# combined_noncontext.to_csv('combined_noncontext.csv', index=False, index_label=False)
-# combined_grouped.to_csv('combined_grouped.csv', index=False, index_label=False)
-
-# if label = surname and text has [element-citation[person-group[name[]]]],
-# replace surname with person-group[name[surname]]]] and make text group[name[surname]]]] [element-citation]
-
-import csv
-import re
-
-def process_csv(input_file, output_file):
-    processed_rows = []
-
-    with open(input_file, mode='r', encoding='utf-8') as infile:
-        reader = csv.reader(infile)
-        header = next(reader)  # Read the header
-        processed_rows.append(header)
-
-        print("Processing...")
-        for row in reader:
-            label, text = row
-
-            # Replace the target pattern in the text column
-            text = re.sub(r"\[element-citation\[person-group\[name\[\]\]\]\]", "[element-citation]", text)
-
-            processed_rows.append([label, text])
-
-    with open(output_file, mode='w', encoding='utf-8', newline='') as outfile:
-        writer = csv.writer(outfile)
-        writer.writerows(processed_rows)
-
-    print("Processing complete. Output saved to", output_file)
-
-# Example usage
-process_csv("combined_context.csv", "combined_simplecontext_Corrected.csv")
+grouped.to_csv('grouped.csv', index=False, index_label=False)
+ungrouped.to_csv('ungrouped_with_metadata.csv', index=False, index_label=False)
